@@ -1,0 +1,6 @@
+*.o
+pinBlock
+pinMalloc
+pinCFT
+btraceFunc
+shadowStack
