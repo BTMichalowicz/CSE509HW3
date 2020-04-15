@@ -1,9 +1,15 @@
-#include "header.h"
-#include "pin-3.13-98189-g60a6ef199-gcc-linux/source/include/pin/pin.H"
-#include "pin-3.13-98189-g60a6ef199-gcc-linux/extras/crt/include/types_marker.h"
+//#include "header.h"
+#include "pin.H"
 
-#include <stdio>
-#include <stdlib>
+#include <iostream>
+#include<fstream>
+using std::cerr;
+using std::ofstream;
+using std::ios;
+using std::string;
+using std::endl;
+
+ofstream outFile; /*Setup for the outfile*/
 
 
 int main(int argc, char** argv){
