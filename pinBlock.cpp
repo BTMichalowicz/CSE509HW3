@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include<fstream>
+using std::hex;
+using std::dec;;
 using std::cerr;
 using std::ofstream;
 using std::ios;

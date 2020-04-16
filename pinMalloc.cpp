@@ -13,12 +13,11 @@ using std::endl;
 
 ofstream outFile; /*Setup for the outfile*/
 static unsigned long long totalMalloc=0; /*Keeping track of malloc-ed bytes*/
+static unsigned int numCalls = 0;
 #if defined(TARGET_MAC)
 #define MALLOC "_malloc"
-#define FREE "_free"
 #else
 #define MALLOC "malloc"
-#define FREE "free"
 #endif
 
 
@@ -27,6 +26,7 @@ KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "pinMalloc.out"
 
 /*Set up argbefore and argafter, writing to the given output file*/
 VOID Arg1Before(CHAR* name, ADDRINT size){
+  numCalls++;
   totalMalloc+=size;
   outFile << name << "(" << size << ")" <<endl;
 }
@@ -52,23 +52,12 @@ VOID Image(IMG img, VOID* v){
 	 RTN_Close(mallocRtn);
   }
 
-  /* Find the Free Function*/
-  RTN freeRtn = RTN_FindByName(img, FREE);
-  if(RTN_Valid(freeRtn)){
-	 RTN_Open(freeRtn);
-	 /*Set up free to print values*/
-	 RTN_InsertCall(freeRtn, IPOINT_BEFORE, (AFUNPTR)Arg1Before,
-		  IARG_ADDRINT, FREE, IARG_FUNCARG_ENTRYPOINT_VALUE, 0,
-		  IARG_END);
-	 RTN_Close(freeRtn);
-  }
-
-
 }
 
 void Fini(INT32 code, VOID* v){
   outFile << dec;
   outFile<< "Total Byted Allocated: " << totalMalloc << endl;
+  outFile << "Number of Malloc Calls: " << numCalls << endl;
   outFile.close();
 
 } /*We're done here*/
