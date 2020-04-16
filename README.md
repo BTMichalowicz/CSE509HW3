@@ -1,7 +1,7 @@
 # CSE 509 Homework3 by Benjamin Michalowicz (SBUID: 110982339)
 
 ### Setup
-0. 
+0. Have pin downloaded. ```pin-3.13-98189-g60a6ef199-gcc-linux```is the version used here, just in case.
 1. Pin directory is in the ~/ directory (/home/sekar)
 2. Place tar-file into  in ~/(pinDIR)/source/tools/
 3. When untar-ing, you will get a folder 'CSE509HW3'
@@ -11,8 +11,14 @@
 ## Part 1: Pintools Warmups
 
 
-### Pintool 1: MallocTracer
-(TODO)
+### Pintool 1: Malloc Tracer/Counter
+ Counts the number of ```Malloc(3)``` calls used in an application, their return values, and at the end of the file, writes the number of bytes alocated.
+
+#### Usage:
+From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ```../../../pin -t obj-ia32/pinMalloc.so -- <Your Application>```
+
+#### Errata:
+Firefox doesn't seem to want to return the number of allocated calls or bytes allocated, even after waiting for a full loading of the application.
 
 ### Pintool 2: Basic Block Counter
 
