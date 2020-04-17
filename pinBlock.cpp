@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include<fstream>
+#include<map>
 #include<unistd.h>
 using std::hex;
 using std::dec;;
@@ -21,8 +22,32 @@ KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
 
 
 
+/*Instrumentation Function*/
+VOID takeBlock1(ADDRINT dummy){
+  basicBlockCount++;
+}
+VOID takeBlock2(ADDRINT dummy2){
+  basicBlockCount++;
+}
+
+VOID Instr(INS instr, VOID* v){
+  
+  if(INS_IsDirectControlFlow(instr)){
+	 //Show that we took a branch and broke into the next block*/
+	 INS_InsertCall(instr, IPOINT_TAKEN_BRANCH, (AFUNPTR)takeBlock1, IARG_ADDRINT, &basicBlockCount, IARG_END);
+  }
+  if(INS_IsIndirectControlFlow(instr)){
+	 if(INS_IsRet(instr)){
+		return;
+	 }
+	 INS_InsertCall(instr, IPOINT_BEFORE, (AFUNPTR)takeBlock2,
+		  IARG_ADDRINT, &basicBlockCount, IARG_END);
+  }
+
+}
+
 /*Usage*/
-static INT32 Usage(){
+INT32 Usage(){
 
   cerr << "This pin tool collects data on every basic block executed\n";
   cerr << "Meaning, any control flow jump causes the end of a block, and post-jump";
@@ -46,6 +71,16 @@ int main(int argc, char** argv){
   if(PIN_Init(argc, argv)){
 	 return Usage();
   }
+
+  outFile.open(KnobOutputFile.Value().c_str());
+  outFile << dec;
+  outFile.setf(ios::showbase);
+
+  INS_AddInstrumentFunction(Instr, 0);
+  PIN_AddFiniFunction(Fini,0);
+
+  /**Let's go!*/
+  PIN_StartProgram();
 
 
   return 0;
