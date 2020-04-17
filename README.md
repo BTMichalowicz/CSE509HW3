@@ -1,4 +1,4 @@
-# CSE 509 Homework3 by Benjamin Michalowicz (SBUID: 110982339)
+# CSE 509 Homework3 by Benjamin Michalowicz
 
 ### Setup
 0. Have pin downloaded. ```pin-3.13-98189-g60a6ef199-gcc-linux```is the version used here, just in case.
@@ -31,7 +31,12 @@ Firefox still doesn't want to return anything, unlike other arbitrary programs l
 
 
 ### Pintool 3: Direct/Indirect Control Transfer/Return/Branch Count
-(TODO)
+Counts all instances of direct/indirect control flow. This includes branches, returns, function calls, and syscalls.
+
+#### Usage
+From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ```../../../pin -t obj-ia32/pinCtrl.so -- <Your Application>``
+
+#### ErrataL
 
 ## Part 2: Security Application
 
