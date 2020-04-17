@@ -82,6 +82,5 @@ int main(int argc, char** argv){
   /**Let's go!*/
   PIN_StartProgram();
 
-
   return 0;
 }

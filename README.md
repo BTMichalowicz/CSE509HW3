@@ -21,8 +21,15 @@ From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ``
 Firefox doesn't seem to want to return the number of allocated calls or bytes allocated, even after waiting for a full loading of the application.
 
 ### Pintool 2: Basic Block Counter
+Counts the number of Basic Blocks (code blocks without any jumps or branches to other code pieces) executed in a program.
+.
+#### Usage
+From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ```../../../pin -t obj-ia32/pinBlock.so -- <Your Application>``
 
-(TODO)
+#### Errata:
+Firefox still doesn't want to return anything, unlike other arbitrary programs like ```ls```, ```vim```, etc.
+
+
 
 
 ## Part 2: Security Application
