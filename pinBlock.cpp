@@ -58,7 +58,7 @@ INT32 Usage(){
 }
 
 void Fini(INT32 code, VOID* v){
-  outFile << "Number of Basic Blocks executed" << basicBlockCount << endl;
+  outFile << "Number of Basic Blocks executed: " << basicBlockCount << endl;
   outFile.close();
 }
 
