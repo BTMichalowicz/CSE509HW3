@@ -14,7 +14,7 @@ using std::string;
 using std::endl;
 
 ofstream outFile; /*Setup for the outfile*/
-INT64 basicBlockCount=0;
+static INT64 basicBlockCount=0;
 
 /*Command Line Switched*/
 KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", 
@@ -23,25 +23,14 @@ KNOB<string> KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool",
 
 
 /*Instrumentation Function*/
-VOID takeBlock1(ADDRINT dummy){
-  basicBlockCount++;
-}
-VOID takeBlock2(ADDRINT dummy2){
+VOID takeBlock(ADDRINT dummy){
   basicBlockCount++;
 }
 
-VOID Instr(INS instr, VOID* v){
+VOID Instr(TRACE instr, VOID* v){
   
-  if(INS_IsDirectControlFlow(instr)){
-	 //Show that we took a branch and broke into the next block*/
-	 INS_InsertCall(instr, IPOINT_TAKEN_BRANCH, (AFUNPTR)takeBlock1, IARG_ADDRINT, &basicBlockCount, IARG_END);
-  }
-  if(INS_IsIndirectControlFlow(instr)){
-	 if(INS_IsRet(instr)){
-		return;
-	 }
-	 INS_InsertCall(instr, IPOINT_BEFORE, (AFUNPTR)takeBlock2,
-		  IARG_ADDRINT, &basicBlockCount, IARG_END);
+  for (BBL bbl = TRACE_BblHead(instr); BBL_Valid(bbl); bbl = BBL_Next(bbl)){
+	 BBL_InsertCall(bbl, IPOINT_ANYWHERE, (AFUNPTR)(takeBlock), IARG_FAST_ANALYSIS_CALL, IARG_END);
   }
 
 }
@@ -76,7 +65,7 @@ int main(int argc, char** argv){
   outFile << dec;
   outFile.setf(ios::showbase);
 
-  INS_AddInstrumentFunction(Instr, 0);
+  TRACE_AddInstrumentFunction(Instr, 0);
   PIN_AddFiniFunction(Fini,0);
 
   /**Let's go!*/
