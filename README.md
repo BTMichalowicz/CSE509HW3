@@ -30,7 +30,8 @@ From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ``
 Firefox still doesn't want to return anything, unlike other arbitrary programs like ```ls```, ```vim```, etc.
 
 
-
+### Pintool 3: Direct/Indirect Control Transfer/Return/Branch Count
+(TODO)
 
 ## Part 2: Security Application
 
