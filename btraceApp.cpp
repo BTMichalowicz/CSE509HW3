@@ -10,6 +10,7 @@
 #include<sys/mman.h>
 #include<sys/reg.h>*/
 using std::hex;
+using std::cout;
 using std::dec;;
 using std::cerr;
 using std::ofstream;
@@ -26,7 +27,11 @@ using std::endl;
 
 VOID Instr(INS ins, VOID* v){
   if(INS_IsSyscall(ins)){
-	 cerr << "TODO" << endl;
+	 cerr << 4*EAX <<endl;
+	 cerr << 4*EBX << endl;
+	 cerr << 4*ECX <<endl;
+	 cerr << 4*EDX <<endl;
+	 
   }
 }
 
@@ -56,7 +61,7 @@ int main(int argc, char** argv){
 	 return Usage(); //Create if failure occurs
   }
 
-  /* TODO: File output?*/
+
   INS_AddInstrumentFunction(Instr, 0);
   PIN_AddFiniFunction(Fini, 0);
 
