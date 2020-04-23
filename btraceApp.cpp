@@ -18,6 +18,7 @@ using std::ios;
 using std::string;
 using std::endl;
 
+
 typedef enum{
   SyscallCallbackType_PIN_AddSyscallEntryFunction = 1,
   SyscallCallbackType_INS_InsertCall = 2
@@ -52,10 +53,32 @@ VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT 
 	 cerr << "Arg5: " << arg5 << endl;	
 
   }else{
-	 cerr << "TODO\n";	
+	 switch(num){
+		case SYS_open:
+		  cerr << "Arg0: " << sys2(SYS_open) << endl;
+		  cerr << "Arg1: " << arg1 << endl;
+		  cerr << "Arg2: " << arg2 << endl;
+		  break;
+
+		case SYS_access:
+		  cerr << "Arg0: " << sys2(SYS_access) << endl;
+		  cerr << "Arg1: " << arg1 << endl;
+		  cerr << "Arg2: " << arg2 << endl;
+		  break;
+		case SYS_stat:
+		  cerr << "Arg0: " << sys2(SYS_stat) << endl;
+		  cerr << "Arg1: " << arg1 << endl;
+		  cerr << "Arg2: " << arg2 << endl;
+		  break;
+
+
+		  break;
+		default:
+		  cerr << "TODO\n";
+	 }
   }
 
-	
+
 #endif
 
 

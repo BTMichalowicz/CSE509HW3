@@ -25,6 +25,9 @@
 #include<sys/user.h>
 #include<sys/reg.h>
 
+#define sys2(x) sysDecode(x)
+#define sysDecode(x) #x
+
 #define FATAL(...) \
     do{ \
         fprintf(stderr, "urlextend trace: " __VA_ARGS__);\
