@@ -17,13 +17,15 @@ using std::ofstream;
 using std::ios;
 using std::string;
 using std::endl;
-
+ofstream outFile; //Put it all into an output file
 
 typedef enum{
   SyscallCallbackType_PIN_AddSyscallEntryFunction = 1,
   SyscallCallbackType_INS_InsertCall = 2
 }SyscallCallbackType;
 /**No outfile. Gonna print off function names for this*/
+
+KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btrace.out", "specify trace file name");
 
 
 /** General plan: Set up for every syscall put in, ensure to print out each instruction with pintools, ala strace.
@@ -45,36 +47,25 @@ VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT 
 	 arg4 = args[4];
 	 arg5 = args[5];
 	 
-	 cerr << "Arg0: " << arg0 << endl;	 
-	 cerr << "Arg1: " << arg1 << endl;	
-	 cerr << "Arg2: " << arg2 << endl;	
-	 cerr << "Arg3: " << arg3 << endl;	
-	 cerr << "Arg4: " << arg4 << endl;	
-	 cerr << "Arg5: " << arg5 << endl;	
+	 outFile << "Arg0: " << arg0 << endl;	 
+	 outFile << "Arg1: " << arg1 << endl;	
+	 outFile << "Arg2: " << arg2 << endl;	
+	 outFile << "Arg3: " << arg3 << endl;	
+	 outFile << "Arg4: " << arg4 << endl;	
+	 outFile << "Arg5: " << arg5 << endl;	
 
   }else{
 	 switch(num){
 		case SYS_open:
-		  cerr << "Arg0: " << sys2(SYS_open) << endl;
-		  cerr << "Arg1: " << arg1 << endl;
-		  cerr << "Arg2: " << arg2 << endl;
-		  break;
-
-		case SYS_access:
-		  cerr << "Arg0: " << sys2(SYS_access) << endl;
-		  cerr << "Arg1: " << arg1 << endl;
-		  cerr << "Arg2: " << arg2 << endl;
-		  break;
+		case SYS_access:	 
 		case SYS_stat:
-		  cerr << "Arg0: " << sys2(SYS_stat) << endl;
-		  cerr << "Arg1: " << arg1 << endl;
-		  cerr << "Arg2: " << arg2 << endl;
-		  break;
-
-
+		  //TODO: Turn arguments into proper types
+		  outFile << "Arg0: " << num << endl;
+		  outFile << "Arg1: " << arg1 << endl;
+		  outFile << "Arg2: " << arg2 << endl;
 		  break;
 		default:
-		  cerr << "TODO\n";
+		  outFile << "TODO\n";
 	 }
   }
 
@@ -86,7 +77,7 @@ VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT 
 }
 
 VOID SyscallAfter(ADDRINT ip, ADDRINT num, ADDRINT arg0){
-  cerr << "Return value: " << arg0 << endl;
+  outFile << "Return value: " << arg0 << endl;
 }
 
 
@@ -112,7 +103,7 @@ VOID Instr(INS ins, VOID* v){
 
 VOID Fini(INT32 code, VOID* v){
 
-  cerr << "Success" << endl;
+  outFile << "Success" << endl;
 }
 
 VOID SyscallExit(THREADID threadIndex, CONTEXT *ctxt, SYSCALL_STANDARD std, VOID* v){
@@ -155,8 +146,9 @@ int main(int argc, char** argv){
   if(PIN_Init(argc, argv)){
 	 return Usage(); //Create if failure occurs
   }
-
-
+  
+  outFile.open(KnobOutputFile.Value().c_str());
+  outFile.setf(ios::showbase);
   INS_AddInstrumentFunction(Instr, 0);
   PIN_AddSyscallEntryFunction(SyscallEntry,0);
   PIN_AddSyscallExitFunction(SyscallExit,0);
