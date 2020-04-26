@@ -1,4 +1,4 @@
-# CSE 509 Homework3 by Benjamin Michalowicz
+# CSE 509 Homework 3 by Benjamin Michalowicz and Ian Buitenkant
 
 ### Setup
 0. Have pin downloaded. ```pin-3.13-98189-g60a6ef199-gcc-linux```is the version used here, just in case.
