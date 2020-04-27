@@ -1,9 +1,33 @@
 #include "pin.H"
-#include "./header.h"
+
 #include<iostream>
 #include<fstream>
 #include<map>
 #include<unistd.h>
+#include<stdio.h>
+#include<stdlib.h>
+#include<ctype.h>
+#include<stddef.h>
+#include<stdint.h>
+#include<inttypes.h>
+#include<unistd.h>
+#include<fcntl.h>
+#include<errno.h>
+#include<time.h>
+#include<assert.h>
+#include<syscall.h>
+#include<sys/stat.h>
+#include <sys/socket.h>
+#include<sys/types.h>
+#include<sys/wait.h>
+#include<string.h>
+#include<sys/mman.h>
+#include<sys/ptrace.h>
+#include<sys/syscall.h>
+#include<sys/user.h>
+#include<sys/reg.h>
+#include<syscall.h>
+
 /*#include<sys/man.h>
 #include<sys/syscall.h>
 #include<sys/user.h>
@@ -36,8 +60,9 @@ VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT 
   //SyscallCallbackType type = (SyscallCallbackType)type0;
 
   ADDRINT* args; //For larger argument values;
-#if defined(TARGET_LINUX) && defined(TARGET_IA32)
   if(num==SYS_mmap){
+#if defined(TARGET_LINUX) && defined(TARGET_IA32)
+
 	 /*Mmap syscall*/
 	 args = reinterpret_cast<ADDRINT*>(arg0);
 	 arg0 = args[0];
@@ -53,24 +78,51 @@ VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT 
 	 outFile << "Arg3: " << arg3 << endl;	
 	 outFile << "Arg4: " << arg4 << endl;	
 	 outFile << "Arg5: " << arg5 << endl;	
-
+#endif
   }else{
 	 switch(num){
 		case SYS_open:
 		case SYS_access:	 
 		case SYS_stat:
+		case SYS_statfs:
+		case SYS_statfs64:
 		  //TODO: Turn arguments into proper types
 		  outFile << "Arg0: " << num << endl;
 		  outFile << "Arg1: " << arg1 << endl;
 		  outFile << "Arg2: " << arg2 << endl;
 		  break;
+		case SYS_read:
+		case SYS_write:
+		case SYS_mprotect:
+		case SYS_waitpid:
+		case SYS_rt_sigaction:
+		case SYS_rt_sigprocmask:
+		case 359:
+		case 362:
+		case SYS_open_by_handle_at:
+		case SYS_openat:
+		  outFile << "Arg0: " << num << endl;
+		  outFile << "Arg1: " << arg1 << endl;
+		  outFile << "Arg2: " << arg2 << endl;
+		  outFile << "Arg3: " << arg3 << endl;
+		  break;
+		case SYS_brk:
+		case SYS_close:
+		case SYS_set_thread_area:
+		case SYS_wait4:
+		case SYS_uname:
+		  outFile << "Arg0: " << num << endl;
+		  outFile << "Arg1: " << arg1 << endl;
+		  break;
+		  
+
 		default:
-		  outFile << "TODO\n";
+		  outFile << "TODO: identify SYSCALL: " << num << "\n";
 	 }
   }
 
 
-#endif
+
 
 
 

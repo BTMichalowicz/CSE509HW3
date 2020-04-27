@@ -2,7 +2,7 @@
 #define __HEADER_H__
 
 //Purpose: To include everything so you don't have to!
-
+#define _GNU_SOURCE_
 #include<stdio.h>
 #include<stdlib.h>
 #include<ctype.h>
@@ -16,6 +16,7 @@
 #include<assert.h>
 #include<syscall.h>
 #include<sys/stat.h>
+#include <sys/socket.h>
 #include<sys/types.h>
 #include<sys/wait.h>
 #include<string.h>
@@ -24,6 +25,7 @@
 #include<sys/syscall.h>
 #include<sys/user.h>
 #include<sys/reg.h>
+#include<syscall.h>
 
 #define sys2(x) sysDecode(x)
 #define sysDecode(x) #x
