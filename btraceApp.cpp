@@ -51,6 +51,7 @@ typedef enum{
 
 KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btrace.out", "specify trace file name");
 
+bool syscall_encountered = false;
 
 /** General plan: Set up for every syscall put in, ensure to print out each instruction with pintools, ala strace.
  * Use dynamic argument printing in EAX, EBX, ECX, EDX
@@ -89,8 +90,8 @@ VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT 
 		case SYS_statfs64:
 		  //TODO: Turn arguments into proper types
 		  outFile << "Arg0: " << num << endl;
-		  outFile << "Arg1: " << arg1 << endl;
-		  outFile << "Arg2: " << arg2 << endl;
+		  outFile << "Arg1: " << arg0 << endl;
+		  outFile << "Arg2: " << arg1 << endl;
 		  break;
 		case SYS_read:
 		case SYS_write:
@@ -103,9 +104,9 @@ VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT 
 		case SYS_open_by_handle_at:
 		case SYS_openat:
 		  outFile << "Arg0: " << num << endl;
-		  outFile << "Arg1: " << arg1 << endl;
-		  outFile << "Arg2: " << arg2 << endl;
-		  outFile << "Arg3: " << arg3 << endl;
+		  outFile << "Arg1: " << arg0 << endl;
+		  outFile << "Arg2: " << arg1 << endl;
+		  outFile << "Arg3: " << arg2 << endl;
 		  break;
 		case SYS_brk:
 		case SYS_close:
@@ -113,7 +114,7 @@ VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT 
 		case SYS_wait4:
 		case SYS_uname:
 		  outFile << "Arg0: " << num << endl;
-		  outFile << "Arg1: " << arg1 << endl;
+		  outFile << "Arg1: " << arg0 << endl;
 		  break;
 		  
 
@@ -122,11 +123,6 @@ VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT 
 	 }
   }
 
-
-
-
-
-
 }
 
 VOID SyscallAfter(ADDRINT ip, ADDRINT num, ADDRINT arg0){
@@ -134,16 +130,31 @@ VOID SyscallAfter(ADDRINT ip, ADDRINT num, ADDRINT arg0){
 }
 
 #endif
+
 void SyscallBefore(ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5){
+  syscall_encountered=true;
+
+  cout << arg0 << endl;
 
   //TODO
   //
 }
 
+void SyscallAfter(ADDRINT ret){
+  cout << ret << endl;
+}
 
+VOID Tracer(TRACE trace, VOID* v){
+  for(BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl=BBL_Next(bbl)){
+	 //TODO
+  }
+}
 
 VOID Instr(INS ins, VOID* v){
+ 
+
   if(INS_IsSyscall(ins)){
+	 
 	 INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_INST_PTR, 
 		  IARG_SYSARG_VALUE, 0,
 		  IARG_SYSARG_VALUE, 1,
@@ -154,7 +165,7 @@ VOID Instr(INS ins, VOID* v){
 		  IARG_ADDRINT, (ADDRINT)SyscallCallbackType_INS_InsertCall,
 		  IARG_END);
 
-	 //INS_InsertCall(ins, IPOINT_AFTER, (AFUNPTR)SyscallAfter, 
+	//INS_InsertCall(ins, IPOINT_AFTER, (AFUNPTR)SyscallAfter, 
 	//	  IARG_FUNCRET_EXITPOINT_VALUE, IARG_END);
 	 
   }
@@ -189,6 +200,7 @@ int main(int argc, char** argv){
   
   outFile.open(KnobOutputFile.Value().c_str());
   outFile.setf(ios::showbase);
+  TRACE_AddInstrumentFunction(Tracer,0);
   INS_AddInstrumentFunction(Instr, 0);
   /*PIN_AddSyscallEntryFunction(SyscallEntry,0);
   PIN_AddSyscallExitFunction(SyscallExit,0);*/
