@@ -55,6 +55,7 @@ KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btrace.out", "s
 /** General plan: Set up for every syscall put in, ensure to print out each instruction with pintools, ala strace.
  * Use dynamic argument printing in EAX, EBX, ECX, EDX
  */
+#if 0
 VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3, ADDRINT arg4, ADDRINT arg5, ADDRINT type0){
   /*Plan: Compare decoding of different system calls upon entering them*/
   //SyscallCallbackType type = (SyscallCallbackType)type0;
@@ -132,6 +133,13 @@ VOID SyscallAfter(ADDRINT ip, ADDRINT num, ADDRINT arg0){
   outFile << "Return value: " << arg0 << endl;
 }
 
+#endif
+void SyscallBefore(ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5){
+
+  //TODO
+  //
+}
+
 
 
 VOID Instr(INS ins, VOID* v){
@@ -158,26 +166,6 @@ VOID Fini(INT32 code, VOID* v){
   outFile << "Success" << endl;
 }
 
-VOID SyscallExit(THREADID threadIndex, CONTEXT *ctxt, SYSCALL_STANDARD std, VOID* v){
-    SyscallAfter(PIN_GetContextReg(ctxt, REG_INST_PTR),
-		PIN_GetSyscallNumber(ctxt, std),
-		PIN_GetSyscallReturn(ctxt, std));
-}
-
-
-VOID SyscallEntry(THREADID threadIndex, CONTEXT *ctxt, SYSCALL_STANDARD std, VOID* v){
-
-  SyscallBefore(PIN_GetContextReg(ctxt, REG_INST_PTR),
-		PIN_GetSyscallNumber(ctxt,std),
-		PIN_GetSyscallArgument(ctxt, std,0),
-		PIN_GetSyscallArgument(ctxt, std,1),
-		PIN_GetSyscallArgument(ctxt, std,2),
-		PIN_GetSyscallArgument(ctxt, std,3),
-		PIN_GetSyscallArgument(ctxt, std,4),
-		PIN_GetSyscallArgument(ctxt, std,5),
-		(ADDRINT)SyscallCallbackType_PIN_AddSyscallEntryFunction);
-
-}
 
 
 
@@ -202,8 +190,8 @@ int main(int argc, char** argv){
   outFile.open(KnobOutputFile.Value().c_str());
   outFile.setf(ios::showbase);
   INS_AddInstrumentFunction(Instr, 0);
-  PIN_AddSyscallEntryFunction(SyscallEntry,0);
-  PIN_AddSyscallExitFunction(SyscallExit,0);
+  /*PIN_AddSyscallEntryFunction(SyscallEntry,0);
+  PIN_AddSyscallExitFunction(SyscallExit,0);*/
   PIN_AddFiniFunction(Fini, 0);
 
   /**Shouldn't return*/
