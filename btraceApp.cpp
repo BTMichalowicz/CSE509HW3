@@ -3,36 +3,7 @@
 #include<iostream>
 #include<fstream>
 #include<map>
-#include<unistd.h>
-#include<stdio.h>
-#include<stdlib.h>
-#include<ctype.h>
-#include<stddef.h>
-#include<stdint.h>
-#include<inttypes.h>
-#include<unistd.h>
-#include<fcntl.h>
-#include<errno.h>
-#include<time.h>
-#include<assert.h>
-#include<syscall.h>
-#include<sys/stat.h>
-#include <sys/socket.h>
-#include<sys/types.h>
-#include<sys/wait.h>
-#include<string.h>
-#include<sys/mman.h>
-#include<sys/ptrace.h>
-#include<sys/syscall.h>
-#include<sys/user.h>
-#include<sys/reg.h>
-#include<syscall.h>
-
-/*#include<sys/man.h>
-#include<sys/syscall.h>
-#include<sys/user.h>
-#include<sys/mman.h>
-#include<sys/reg.h>*/
+#include"header.h"
 using std::hex;
 using std::cout;
 using std::dec;;
@@ -146,6 +117,11 @@ void SyscallAfter(ADDRINT ret){
 
 VOID Tracer(TRACE trace, VOID* v){
   for(BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl=BBL_Next(bbl)){
+	 if(syscall_encountered){
+		BBL_InsertCall(bbl,IPOINT_BEFORE, (AFUNPTR)SyscallAfter, IARG_ADDRINT, 24, IARG_END);
+	 }
+
+
 	 //TODO
   }
 }

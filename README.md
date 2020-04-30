@@ -36,7 +36,7 @@ Counts all instances of direct/indirect control flow. This includes branches, re
 #### Usage
 From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ```../../../pin -t obj-ia32/pinCtrl.so -- <Your Application> ```
 
-#### Errata:
+#### ErrataL
 
 ## Part 2: Security Application
 
