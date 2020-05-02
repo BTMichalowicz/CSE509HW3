@@ -38,7 +38,11 @@ From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ``
 
 #### ErrataL
 
-## Part 2: Security Application
+## Part 2: Security Application: "PinTrace"
+	Performs system call interception with Pin calls inside Basic Blocks
+#### Usage:
+From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ```../../../pin -t obj-ia32/btraceApp.so -- <Your Application> ```
+
 
 (TODO)
 
