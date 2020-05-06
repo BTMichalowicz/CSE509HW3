@@ -24,6 +24,10 @@ KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btrace.out", "s
 
 bool syscall_encountered = false;
 
+int num_calls = 0;
+int num_rets = 0;
+int num_instrumented = 0;
+int syscalls_found = 0;
 /** General plan: Set up for every syscall put in, ensure to print out each instruction with pintools, ala strace.
  * Use dynamic argument printing in EAX, EBX, ECX, EDX
  */
@@ -102,39 +106,67 @@ VOID SyscallAfter(ADDRINT ip, ADDRINT num, ADDRINT arg0){
 
 #endif
 
-void SyscallBefore(ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5){
+void SyscallBefore(ADDRINT inst_ptr, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5){
   //syscall_encountered=true;
   //outFile << "Syscall found!\n";
-  outFile << "Arg0: " << arg0;
+  outFile << "Num: " <<num;
+  //TODO: use the syscall number to print the appropriate number of arguments  
+  outFile << "; Arg0: " <<arg0;
   outFile << "; Arg1: " <<arg1;
   outFile << "; arg2: " <<arg2;
   outFile << "; arg3: " <<arg3;
   outFile << "; arg4: " <<arg4;
-  outFile << "; arg5: " <<arg5 << endl;
+  outFile << "; arg5: " <<arg5<<endl;
+  //outFile << "; idk: "  <<idk<<endl;
   //outFile << arg0 << endl;
 
   //TODO
   //
+  num_calls++;
+  syscall_encountered = true;
 }
 
-void SyscallAfter(UINT32 ret){
-  outFile << "Return value: " << ret << endl<<endl;
+
+void SyscallAfter(ADDRINT ret, ADDRINT num){
+  if (syscall_encountered){
+    outFile << "Return value: " << ret << endl << num << endl;
+    //outFile << "; ERRNO: " << errno << endl <<endl;
+    num_rets++;
+    syscall_encountered = false;
+
+  }
+}
+
+void ProcessRet(CONTEXT * ctxt){
+  if (syscall_encountered){
+
+    outFile << "EAX Content: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
+    num_rets++;
+    syscall_encountered = false;
+  }
 }
 
 VOID Tracer(TRACE trace, VOID* v){
   for(BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl=BBL_Next(bbl)){
 
-    if(syscall_encountered==true){
-      BBL_InsertCall(bbl,IPOINT_BEFORE, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_END);
-      syscall_encountered=false;
-    }
+    //if(syscall_encountered==true){
+      //BBL_InsertCall(bbl,IPOINT_BEFORE, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_SYSRET_ERRNO, IARG_END);
+
+      //INS_InsertCall(BBL_InsHead(bbl), IPOINT_AFTER, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_SYSRET_ERRNO, IARG_END);
+      BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)ProcessRet, IARG_CONST_CONTEXT, IARG_END);
+      //syscall_encountered=false;
+      num_instrumented++;
+    //}
+	//TODO: try passing the CONTEXT variable and getting the value of REG_EAX
 
 
 
 
     for(INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins=INS_Next(ins)){
 	if(INS_IsSyscall(ins)){
-	  INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_INST_PTR, 
+	  INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), 
+	      IARG_INST_PTR,
+	      IARG_SYSCALL_NUMBER, 
 	      IARG_SYSARG_VALUE, 0,
 	      IARG_SYSARG_VALUE, 1,
 	      IARG_SYSARG_VALUE, 2,
@@ -143,7 +175,8 @@ VOID Tracer(TRACE trace, VOID* v){
 	      IARG_SYSARG_VALUE, 5,
 	      IARG_ADDRINT, (ADDRINT)SyscallCallbackType_INS_InsertCall,
 	      IARG_END);
-	  syscall_encountered=true;
+	  //syscall_encountered=true;
+          syscalls_found++;
 	  break;
 	}
     }
@@ -155,20 +188,16 @@ VOID Instr(INS ins, VOID* v){
 
   if(INS_IsSyscall(ins)){
 
-    //cout << "Syscall!" << endl;
-
-    INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_INST_PTR, 
+    INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_INST_PTR, IARG_SYSCALL_NUMBER,
 	IARG_SYSARG_VALUE, 0,
 	IARG_SYSARG_VALUE, 1,
 	IARG_SYSARG_VALUE, 2,
 	IARG_SYSARG_VALUE, 3,
 	IARG_SYSARG_VALUE, 4,
 	IARG_SYSARG_VALUE, 5,
-	IARG_ADDRINT, (ADDRINT)SyscallCallbackType_INS_InsertCall,
 	IARG_END);
 
-    //INS_InsertCall(ins, IPOINT_AFTER, (AFUNPTR)SyscallAfter, 
-    //	  IARG_FUNCRET_EXITPOINT_VALUE, IARG_END);
+    //INS_InsertCall(ins, IPOINT_AFTER, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_END);
 
   }
 }
@@ -177,6 +206,10 @@ VOID Instr(INS ins, VOID* v){
 VOID Fini(INT32 code, VOID* v){
 
   outFile << "Success" << endl;
+  outFile << "Number of calls: " << num_calls<<endl;
+  outFile << "Number of returns: " << num_rets<<endl;
+  outFile << "Blocks instrumented: " << num_instrumented<<endl;
+  outFile << "Syscalls found: " << syscalls_found<<endl;
 }
 
 
