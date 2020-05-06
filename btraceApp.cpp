@@ -72,6 +72,13 @@ string syscall_decode(int syscallNum){
     case SYS_get_robust_list: return "get_robust_list";
     case SYS_exit: return "exit(2)";
     case SYS_wait4: return "wait4";
+    case SYS_stat64: return "stat64";
+    case SYS_getuid32: return "getuid32";
+    case SYS_getgid32: return "getgid32";
+    case SYS_faccessat: return "faccessat";
+    case SYS_getegid32: return "getegid32";
+    case 243: return "set_thread_area";
+    case 119: return "sigreturn";
     case 362: return "connect";
     case 363: return "listen";
     case SYS_geteuid32: return "euid32";
@@ -118,14 +125,28 @@ string syscall_decode(int syscallNum){
     void SyscallBefore(ADDRINT inst_ptr, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5){
   //syscall_encountered=true;
   //outFile << "Syscall found!\n";
-  outFile << "Num: " <<syscall_decode(num);
+  //
+  
+#if defined(TARGET_LINUX) && defined(TARGET_IA32)
+      if(num==SYS_mmap){
+	ADDRINT * mmapArgs = reinterpret_cast<ADDRINT *>(arg0);
+	arg0 = mmapArgs[0];
+	arg1 = mmapArgs[1];
+	arg2 = mmapArgs[2];
+	arg3 = mmapArgs[3];
+	arg4 = mmapArgs[4];
+	arg5 = mmapArgs[5];
+      }
+#endif
+
+  outFile << "\n" <<syscall_decode(num);
   //TODO: use the syscall number to print the appropriate number of arguments  
-  outFile << "; Arg0: " <<arg0;
-  outFile << "; Arg1: " <<arg1;
-  outFile << "; arg2: " <<arg2;
-  outFile << "; arg3: " <<arg3;
-  outFile << "; arg4: " <<arg4;
-  outFile << "; arg5: " <<arg5<<endl;
+  outFile << "( Arg0: " <<arg0;
+  outFile << ", Arg1: " <<arg1;
+  outFile << ", arg2: " <<arg2;
+  outFile << ", arg3: " <<arg3;
+  outFile << ", arg4: " <<arg4;
+  outFile << ", arg5: " <<arg5 << " )" <<endl;
   //outFile << "; idk: "  <<idk<<endl;
   //outFile << arg0 << endl;
 
@@ -138,7 +159,7 @@ string syscall_decode(int syscallNum){
 
 void SyscallAfter(ADDRINT ret, ADDRINT num){
   if (syscall_encountered){
-    outFile << "Return value: " << ret << endl << num << endl;
+    outFile << "Return value: " << ret << endl << num << endl<<endl;
     //outFile << "; ERRNO: " << errno << endl <<endl;
     num_rets++;
     syscall_encountered = false;
@@ -184,6 +205,7 @@ VOID Tracer(TRACE trace, VOID* v){
 	      IARG_SYSARG_VALUE, 5,
 	      IARG_ADDRINT, (ADDRINT)SyscallCallbackType_INS_InsertCall,
 	      IARG_END);
+	  //INS_InsertCall(ins, IPOINT_AFTER, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_END);
 	  //syscall_encountered=true;
           syscalls_found++;
 	  break;
