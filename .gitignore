@@ -6,4 +6,6 @@ btraceApp.so
 pin-3.13-98189-g60a6ef199-gcc-linux*
 obj-ia32/
 *.out
+test
+test.c
 

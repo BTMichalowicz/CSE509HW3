@@ -74,7 +74,9 @@ string syscall_decode(int syscallNum){
     case SYS_wait4: return "wait4";
     case 362: return "connect";
     case 363: return "listen";
-    
+    case SYS_geteuid32: return "euid32";
+    case 102: return "socketcall";
+    case 252: return "exit(2)";
     case 364: return "accept4";
     case 359: return "socket";
     case 360: return "socketpair";
@@ -95,6 +97,15 @@ string syscall_decode(int syscallNum){
     case SYS_setpriority: return "setpriority";
     case SYS_getpriority: return "getpriority";
     case SYS_setuid: return "setuid";
+    case 311: return "set_robust_list";
+    case SYS_fork: return "fork";
+    case SYS_fcntl: return "fcntl";
+    case SYS_fcntl64: return "fcntl64";
+    
+    case SYS_fsync: return "fsync";
+    case SYS_dup: return "dup";
+    case SYS_dup2: return "dup2";
+    case SYS_dup3: return "dup3";
 
     default:
 	  stringstream ss;
