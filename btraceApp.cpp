@@ -4,6 +4,9 @@
 #include<fstream>
 #include<map>
 #include"header.h"
+#include<sstream>
+#include<bits/stdc++.h>
+using namespace std;
 using std::hex;
 using std::cout;
 using std::dec;;
@@ -20,7 +23,7 @@ typedef enum{
 }SyscallCallbackType;
 /**No outfile. Gonna print off function names for this*/
 
-KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btrace.out", "specify trace file name");
+KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btraceApp.out", "specify trace file name");
 
 bool syscall_encountered = false;
 
@@ -31,85 +34,80 @@ int syscalls_found = 0;
 /** General plan: Set up for every syscall put in, ensure to print out each instruction with pintools, ala strace.
  * Use dynamic argument printing in EAX, EBX, ECX, EDX
  */
-#if 0
-VOID SyscallBefore(ADDRINT ip, ADDRINT num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3, ADDRINT arg4, ADDRINT arg5, ADDRINT type0){
-  /*Plan: Compare decoding of different system calls upon entering them*/
-  //SyscallCallbackType type = (SyscallCallbackType)type0;
 
-  ADDRINT* args; //For larger argument values;
-  if(num==SYS_mmap){
-#if defined(TARGET_LINUX) && defined(TARGET_IA32)
+string syscall_decode(int syscallNum){
+  switch(syscallNum){
+    case SYS_read: return "read";
+    case SYS_write: return "write";
+    case SYS_readv: return "readv";
+    case SYS_writev: return "writev";
+    case SYS_open: return "open";
+    case SYS_close: return "close";
+    case SYS_openat: return "openat";
+    case SYS_creat: return "creat";
+    case SYS_getdents: return "getdents";
+    case SYS_uname: return "uname";
+    case SYS_getdents64: return "getdents64";
+    case SYS_statfs64: return "statfs64";
+    case SYS_fstatfs64: return "fstatfs64";
+    case SYS_fstat64: return "fstat64";
+    case SYS_access: return "access";
+    case SYS_rename: return "rename";
+    case SYS_mmap: return "mmap";
+    case SYS_mmap2: return "mmap2";
+    case SYS_execve: return "execve";
+    case SYS_fadvise64: return "fadvise64";
+    case SYS_brk: return "brk";
+    case SYS_munmap: return "munmap";
+    case SYS_mremap: return "mremap";
+    case SYS_ioctl: return "ioctl";
+    case SYS_mprotect: return "mprotect";
+    case SYS_rt_sigaction: return "rt_sigaction";
+    case SYS_rt_sigprocmask: return "rt_sigprocmask";
+    case SYS_rt_sigpending: return "rt_sigpending";
+    case SYS_rt_sigtimedwait: return "rt_sigtimedwait";
+    case SYS_rt_sigreturn: return "rt_sigreturn";
+    case SYS_clone: return "clone";
+    case SYS_set_tid_address: return "set_tid_address";
+    case SYS_get_robust_list: return "get_robust_list";
+    case SYS_exit: return "exit(2)";
+    case SYS_wait4: return "wait4";
+    case 362: return "connect";
+    case 363: return "listen";
+    
+    case 364: return "accept4";
+    case 359: return "socket";
+    case 360: return "socketpair";
+    case 373: return "shutdown";
+    case 140: return "llseek";
+    case SYS_pipe2: return "pipe2";
+    case SYS_pipe: return "pipe";
+    case SYS_chdir: return "chdir";
+    case SYS_fchdir: return "fchdir";
+    case SYS_chroot: return "chroot";
+    case SYS_fchmod: return "fchmod"; 
+    case SYS_getpid: return "getpid";
+    case SYS_getppid: return "getppid";
+    case SYS_getuid: return "getuid";
+    case SYS_geteuid: return "geteuid";
+    case SYS_getgid: return "getgid";
+    case SYS_ptrace: return "ptrace";
+    case SYS_setpriority: return "setpriority";
+    case SYS_getpriority: return "getpriority";
+    case SYS_setuid: return "setuid";
 
-    /*Mmap syscall*/
-    args = reinterpret_cast<ADDRINT*>(arg0);
-    arg0 = args[0];
-    arg1 = args[1];
-    arg2 = args[2];
-    arg3 = args[3];
-    arg4 = args[4];
-    arg5 = args[5];
+    default:
+	  stringstream ss;
+	  ss << syscallNum;
+	  return ss.str();
 
-    outFile << "Arg0: " << arg0 << endl;	 
-    outFile << "Arg1: " << arg1 << endl;	
-    outFile << "Arg2: " << arg2 << endl;	
-    outFile << "Arg3: " << arg3 << endl;	
-    outFile << "Arg4: " << arg4 << endl;	
-    outFile << "Arg5: " << arg5 << endl;	
-#endif
-  }else{
-    switch(num){
-      case SYS_open:
-      case SYS_access:	 
-      case SYS_stat:
-      case SYS_statfs:
-      case SYS_statfs64:
-	//TODO: Turn arguments into proper types
-	outFile << "Arg0: " << num << endl;
-	outFile << "Arg1: " << arg0 << endl;
-	outFile << "Arg2: " << arg1 << endl;
-	break;
-      case SYS_read:
-      case SYS_write:
-      case SYS_mprotect:
-      case SYS_waitpid:
-      case SYS_rt_sigaction:
-      case SYS_rt_sigprocmask:
-      case 359:
-      case 362:
-      case SYS_open_by_handle_at:
-      case SYS_openat:
-	outFile << "Arg0: " << num << endl;
-	outFile << "Arg1: " << arg0 << endl;
-	outFile << "Arg2: " << arg1 << endl;
-	outFile << "Arg3: " << arg2 << endl;
-	break;
-      case SYS_brk:
-      case SYS_close:
-      case SYS_set_thread_area:
-      case SYS_wait4:
-      case SYS_uname:
-	outFile << "Arg0: " << num << endl;
-	outFile << "Arg1: " << arg0 << endl;
-	break;
-
-
-      default:
-	outFile << "TODO: identify SYSCALL: " << num << "\n";
-    }
   }
-
+  
 }
-
-VOID SyscallAfter(ADDRINT ip, ADDRINT num, ADDRINT arg0){
-  outFile << "Return value: " << arg0 << endl;
-}
-
-#endif
-
-void SyscallBefore(ADDRINT inst_ptr, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5){
+    void SyscallBefore(ADDRINT inst_ptr, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5){
   //syscall_encountered=true;
   //outFile << "Syscall found!\n";
-  outFile << "Num: " <<num;
+  outFile << "Num: " <<syscall_decode(num);
   //TODO: use the syscall number to print the appropriate number of arguments  
   outFile << "; Arg0: " <<arg0;
   outFile << "; Arg1: " <<arg1;
