@@ -139,14 +139,15 @@ string syscall_decode(int syscallNum){
       }
 #endif
 
-  outFile << "\n" << syscall_decode(num);
+  outFile << "\n0x" <<hex << inst_ptr;
+  outFile << ": "<< syscall_decode(num);
   //TODO: use the syscall number to print the appropriate number of arguments  
-  outFile << "( Arg0: " <<arg0;
-  outFile << ", Arg1: " <<arg1;
-  outFile << ", arg2: " <<arg2;
-  outFile << ", arg3: " <<arg3;
-  outFile << ", arg4: " <<arg4;
-  outFile << ", arg5: " <<arg5 << " )" <<endl;
+  outFile << "( arg0: 0x" << hex << arg0;
+  outFile << ", arg1: 0x" << hex << arg1;
+  outFile << ", arg2: 0x" << hex << arg2;
+  outFile << ", arg3: 0x" << hex << arg3;
+  outFile << ", arg4: 0x" << hex << arg4;
+  outFile << ", arg5: 0x" << hex << arg5 << " )" <<endl;
   //outFile << "; idk: "  <<idk<<endl;
   //outFile << arg0 << endl;
 
