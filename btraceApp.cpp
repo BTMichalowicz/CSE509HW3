@@ -170,7 +170,13 @@ void SyscallAfter(ADDRINT ret, ADDRINT num){
 void ProcessRet(CONTEXT * ctxt){
   if (syscall_encountered){
 
-    outFile << "EAX Content/Return value: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
+    outFile << "EAX Content: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
+    //outFile << "Return value: " << PIN_GetSyscallReturn(ctxt, SYSCALL_STANDARD_IA32_LINUX) << endl;
+    int err = PIN_GetSyscallErrno(ctxt, SYSCALL_STANDARD_IA32_LINUX);
+    if(err!=0){
+      outFile << "Error Number: " << err << endl;
+
+    }
     num_rets++;
     syscall_encountered = false;
   }
@@ -233,6 +239,7 @@ VOID Fini(INT32 code, VOID* v){
   outFile << "Number of returns: " << num_rets<<endl;
   outFile << "Blocks instrumented: " << num_instrumented<<endl;
   outFile << "Syscalls found: " << syscalls_found<<endl;
+  outFile.close(); //Ben don't forget to close files!!!
 }
 
 
