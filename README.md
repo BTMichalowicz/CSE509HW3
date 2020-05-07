@@ -38,12 +38,17 @@ From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ``
 
 #### ErrataL
 
-## Part 2: Security Application: "PinTrace"
+## Part 2: Security Application: "bTraceApp", or p(in)Trace
 	Performs system call interception with Pin calls inside Basic Blocks
 #### Usage:
 From inside ```pin-3.13-98189-g60a6ef199-gcc-linux/source/tools/CSE509HW3```: ```../../../pin -t obj-ia32/btraceApp.so -- <Your Application> ```
 
+#### Breakdown
+Breaks down basic blocks in a trace, where if a given instruction is a system call, every argument w.r.t said call is printed, along with an associated name. 
+The start of the next basic block is after the return from kernel space, which allows the return value from EAX to be processed.
 
+#### Errata
+Given PIN's constructs, it is difficult to examine whether an argument is a filename or not. Intuition on the size of the number and return value usually dictate if an argument is an integer, flags, or a pointer, though.
 (TODO)
 
 

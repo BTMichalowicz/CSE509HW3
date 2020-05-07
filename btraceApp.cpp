@@ -139,7 +139,7 @@ string syscall_decode(int syscallNum){
       }
 #endif
 
-  outFile << "\n" <<syscall_decode(num);
+  outFile << "\n" << syscall_decode(num);
   //TODO: use the syscall number to print the appropriate number of arguments  
   outFile << "( Arg0: " <<arg0;
   outFile << ", Arg1: " <<arg1;
@@ -170,7 +170,7 @@ void SyscallAfter(ADDRINT ret, ADDRINT num){
 void ProcessRet(CONTEXT * ctxt){
   if (syscall_encountered){
 
-    outFile << "EAX Content: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
+    outFile << "EAX Content/Return value: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
     num_rets++;
     syscall_encountered = false;
   }
@@ -179,15 +179,9 @@ void ProcessRet(CONTEXT * ctxt){
 VOID Tracer(TRACE trace, VOID* v){
   for(BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl=BBL_Next(bbl)){
 
-    //if(syscall_encountered==true){
-      //BBL_InsertCall(bbl,IPOINT_BEFORE, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_SYSRET_ERRNO, IARG_END);
-
-      //INS_InsertCall(BBL_InsHead(bbl), IPOINT_AFTER, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_SYSRET_ERRNO, IARG_END);
       BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)ProcessRet, IARG_CONST_CONTEXT, IARG_END);
-      //syscall_encountered=false;
       num_instrumented++;
-    //}
-	//TODO: try passing the CONTEXT variable and getting the value of REG_EAX
+    
 
 
 
@@ -227,8 +221,6 @@ VOID Instr(INS ins, VOID* v){
 	IARG_SYSARG_VALUE, 4,
 	IARG_SYSARG_VALUE, 5,
 	IARG_END);
-
-    //INS_InsertCall(ins, IPOINT_AFTER, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_END);
 
   }
 }
