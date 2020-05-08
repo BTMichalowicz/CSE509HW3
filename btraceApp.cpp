@@ -1,5 +1,5 @@
 #include "pin.H"
-
+#include "instlib.H"
 #include<iostream>
 #include<fstream>
 #include<map>
@@ -22,6 +22,7 @@ typedef enum{
 
 KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btrace.out", "specify trace file name");
 
+INSTLIB::FOLLOW_CHILD follow;
 bool syscall_encountered = false;
 
 int num_calls = 0;
@@ -137,10 +138,10 @@ void SyscallAfter(ADDRINT ret, ADDRINT num){
   }
 }
 
-void ProcessRet(CONTEXT * ctxt){
+void ProcessRet(CONTEXT * ctxt, INT32 num){
   if (syscall_encountered){
 
-    outFile << "EAX Content: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
+    outFile << "EAX Content: " << PIN_GetContextReg(ctxt, REG_EAX) << endl << "errno?: " << num<<endl;
     num_rets++;
     syscall_encountered = false;
   }
@@ -153,7 +154,7 @@ VOID Tracer(TRACE trace, VOID* v){
       //BBL_InsertCall(bbl,IPOINT_BEFORE, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_SYSRET_ERRNO, IARG_END);
 
       //INS_InsertCall(BBL_InsHead(bbl), IPOINT_AFTER, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_SYSRET_ERRNO, IARG_END);
-      BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)ProcessRet, IARG_CONST_CONTEXT, IARG_END);
+      BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)ProcessRet, IARG_CONST_CONTEXT, IARG_SYSRET_ERRNO, IARG_END);
       //syscall_encountered=false;
       num_instrumented++;
     //}
@@ -233,6 +234,7 @@ int main(int argc, char** argv){
     return Usage(); //Create if failure occurs
   }
 
+ 
   outFile.open(KnobOutputFile.Value().c_str());
   outFile.setf(ios::showbase);
   TRACE_AddInstrumentFunction(Tracer,0);
