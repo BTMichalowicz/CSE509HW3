@@ -147,6 +147,9 @@ string syscall_decode(int syscallNum){
     case SYS_stat:
     case SYS_access:
     case SYS_lstat:
+    case SYS_creat:
+    case SYS_chdir:
+    case SYS_execve:
       outFile << "( arg0: \"" << (char*)(*(&arg0)) << "\"";
       break;
     default:
