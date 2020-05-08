@@ -108,7 +108,8 @@ string syscall_decode(int syscallNum){
     case SYS_fork: return "fork";
     case SYS_fcntl: return "fcntl";
     case SYS_fcntl64: return "fcntl64";
-    
+    case SYS_link: return "link";
+    case SYS_unlink: return "unlink";
     case SYS_fsync: return "fsync";
     case SYS_dup: return "dup";
     case SYS_dup2: return "dup2";
@@ -150,6 +151,9 @@ string syscall_decode(int syscallNum){
     case SYS_creat:
     case SYS_chdir:
     case SYS_execve:
+    case SYS_rename:
+    case SYS_chroot:
+    case SYS_unlink:
       outFile << "( arg0: \"" << (char*)(*(&arg0)) << "\"";
       break;
     default:
@@ -157,7 +161,18 @@ string syscall_decode(int syscallNum){
       outFile << "( arg0: " << hex << arg0;
       break;
   }
-  outFile << ", arg1: " << hex << arg1;
+
+  switch(num){
+    case SYS_openat:
+    case SYS_rename:
+    case SYS_renameat:
+    case SYS_unlinkat:
+      outFile<< ", arg1: " << (char*)(*(&arg1)) << "\n";
+      break;
+    default:
+      outFile << ", arg1: " << hex << arg1;
+      break;
+  }
   outFile << ", arg2: " << hex << arg2;
   outFile << ", arg3: " << hex << arg3;
   outFile << ", arg4: " << hex << arg4;
