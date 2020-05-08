@@ -141,13 +141,24 @@ string syscall_decode(int syscallNum){
 
   outFile << "\n0x" <<hex << inst_ptr;
   outFile << ": "<< syscall_decode(num);
-  //TODO: use the syscall number to print the appropriate number of arguments  
-  outFile << "( arg0: 0x" << hex << arg0;
-  outFile << ", arg1: 0x" << hex << arg1;
-  outFile << ", arg2: 0x" << hex << arg2;
-  outFile << ", arg3: 0x" << hex << arg3;
-  outFile << ", arg4: 0x" << hex << arg4;
-  outFile << ", arg5: 0x" << hex << arg5 << " )" <<endl;
+  //TODO: use the syscall number to print the appropriate number of arguments
+  switch(num){
+    case SYS_open:
+    case SYS_stat:
+    case SYS_access:
+    case SYS_lstat:
+      outFile << "( arg0: \"" << (char*)(*(&arg0)) << "\"";
+      break;
+    default:
+
+      outFile << "( arg0: " << hex << arg0;
+      break;
+  }
+  outFile << ", arg1: " << hex << arg1;
+  outFile << ", arg2: " << hex << arg2;
+  outFile << ", arg3: " << hex << arg3;
+  outFile << ", arg4: " << hex << arg4;
+  outFile << ", arg5: " << hex << arg5 << " )" <<endl;
   //outFile << "; idk: "  <<idk<<endl;
   //outFile << arg0 << endl;
 

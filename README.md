@@ -48,6 +48,5 @@ Breaks down basic blocks in a trace, where if a given instruction is a system ca
 The start of the next basic block is after the return from kernel space, which allows the return value from EAX to be processed. Error numbers are provided if the returned ```errno``` variable is NOT zero.
 
 #### Errata
-Given PIN's constructs, it is difficult to examine whether an argument is a filename or not. Intuition on the size of the number and return value usually dictate if an argument is an integer, flags, or a pointer, though.
 
 
