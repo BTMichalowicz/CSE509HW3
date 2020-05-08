@@ -123,11 +123,20 @@ string syscall_decode(int syscallNum){
   }
   
 }
-    void SyscallBefore(ADDRINT inst_ptr, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5){
+    void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr/*, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5*/){
   //syscall_encountered=true;
   //outFile << "Syscall found!\n";
   //
+  //
   
+      INT32 num =  PIN_GetContextReg(ctxt, REG_EAX);
+      ADDRINT arg0 = PIN_GetContextReg(ctxt, REG_EBX);
+      ADDRINT arg1 = PIN_GetContextReg(ctxt, REG_ECX);
+      ADDRINT arg2 = PIN_GetContextReg(ctxt, REG_EDX);
+      ADDRINT arg3 = PIN_GetContextReg(ctxt, REG_ESI);
+      ADDRINT arg4 = PIN_GetContextReg(ctxt, REG_EDI);
+      ADDRINT arg5 = PIN_GetContextReg(ctxt, REG_EBP);
+
 #if defined(TARGET_LINUX) && defined(TARGET_IA32)
       if(num==SYS_mmap){
 	ADDRINT * mmapArgs = reinterpret_cast<ADDRINT *>(arg0);
@@ -204,7 +213,7 @@ void ProcessRet(CONTEXT * ctxt){
     //outFile << "Return value: " << PIN_GetSyscallReturn(ctxt, SYSCALL_STANDARD_IA32_LINUX) << endl;
     int err = PIN_GetSyscallErrno(ctxt, SYSCALL_STANDARD_IA32_LINUX);
     if(err!=0){
-      outFile << "Error Number: " << err << endl;
+      outFile << "Error Number: " << dec << err << endl;
 
     }
     num_rets++;
@@ -219,24 +228,11 @@ VOID Tracer(TRACE trace, VOID* v){
       num_instrumented++;
     
 
-
-
-
     for(INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins=INS_Next(ins)){
 	if(INS_IsSyscall(ins)){
-	  INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), 
-	      IARG_INST_PTR,
-	      IARG_SYSCALL_NUMBER, 
-	      IARG_SYSARG_VALUE, 0,
-	      IARG_SYSARG_VALUE, 1,
-	      IARG_SYSARG_VALUE, 2,
-	      IARG_SYSARG_VALUE, 3,
-	      IARG_SYSARG_VALUE, 4,
-	      IARG_SYSARG_VALUE, 5,
-	      IARG_ADDRINT, (ADDRINT)SyscallCallbackType_INS_InsertCall,
-	      IARG_END);
-	  //INS_InsertCall(ins, IPOINT_AFTER, (AFUNPTR)SyscallAfter, IARG_SYSRET_VALUE, IARG_END);
-	  //syscall_encountered=true;
+	  INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_CONST_CONTEXT, IARG_INST_PTR, IARG_END);
+	  
+
           syscalls_found++;
 	  break;
 	}
@@ -244,36 +240,17 @@ VOID Tracer(TRACE trace, VOID* v){
  }
 }
 
-VOID Instr(INS ins, VOID* v){
-
-
-  if(INS_IsSyscall(ins)){
-
-    INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_INST_PTR, IARG_SYSCALL_NUMBER,
-	IARG_SYSARG_VALUE, 0,
-	IARG_SYSARG_VALUE, 1,
-	IARG_SYSARG_VALUE, 2,
-	IARG_SYSARG_VALUE, 3,
-	IARG_SYSARG_VALUE, 4,
-	IARG_SYSARG_VALUE, 5,
-	IARG_END);
-
-  }
-}
-
 
 VOID Fini(INT32 code, VOID* v){
 
   outFile << "Success" << endl;
+  outFile << dec;
   outFile << "Number of calls: " << num_calls<<endl;
   outFile << "Number of returns: " << num_rets<<endl;
   outFile << "Blocks instrumented: " << num_instrumented<<endl;
   outFile << "Syscalls found: " << syscalls_found<<endl;
   outFile.close(); //Ben don't forget to close files!!!
 }
-
-
-
 
 
 INT32 Usage(VOID){
