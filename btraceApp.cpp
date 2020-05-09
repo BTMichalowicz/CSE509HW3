@@ -26,15 +26,24 @@ typedef enum{
 KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btraceApp.out", "specify trace file name");
 
 bool syscall_encountered = false;
-
+int num_threads = 0;
 int num_calls = 0;
 int num_rets = 0;
 int num_instrumented = 0;
 int syscalls_found = 0;
+
+map<int,int> process_map;
+
+PIN_LOCK pinLock;
 /** General plan: Set up for every syscall put in, ensure to print out each instruction with pintools, ala strace.
  * Use dynamic argument printing in EAX, EBX, ECX, EDX
  */
 
+string get_identifier(THREADID tid){
+  stringstream buff;
+  buff << PIN_GetTid()<<":" <<PIN_GetPid();
+  return buff.str();
+}
 string syscall_decode(int syscallNum){
   switch(syscallNum){
     case SYS_read: return "read";
@@ -123,7 +132,7 @@ string syscall_decode(int syscallNum){
   }
   
 }
-    void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr/*, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5*/){
+void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr,THREADID tid/*, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5*/){
   //syscall_encountered=true;
   //outFile << "Syscall found!\n";
   //
@@ -148,7 +157,7 @@ string syscall_decode(int syscallNum){
 	arg5 = mmapArgs[5];
       }
 #endif
-
+  PIN_GetLock(&pinLock,  PIN_GetTid());
   outFile << "\n0x" <<hex << inst_ptr;
   outFile << ": "<< syscall_decode(num);
   //TODO: use the syscall number to print the appropriate number of arguments
@@ -193,9 +202,11 @@ string syscall_decode(int syscallNum){
   //
   num_calls++;
   syscall_encountered = true;
+  process_map[PIN_GetTid()] += 1;
+  PIN_ReleaseLock(&pinLock);
 }
 
-
+/*
 void SyscallAfter(ADDRINT ret, ADDRINT num){
   if (syscall_encountered){
     outFile << "Return value: " << ret << endl << num << endl<<endl;
@@ -205,10 +216,10 @@ void SyscallAfter(ADDRINT ret, ADDRINT num){
 
   }
 }
-
-void ProcessRet(CONTEXT * ctxt){
+*/
+void ProcessRet(CONTEXT * ctxt, THREADID tid){
   if (syscall_encountered){
-
+    PIN_GetLock(&pinLock,  PIN_GetTid());
     outFile << "EAX Content: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
     //outFile << "Return value: " << PIN_GetSyscallReturn(ctxt, SYSCALL_STANDARD_IA32_LINUX) << endl;
     int err = PIN_GetSyscallErrno(ctxt, SYSCALL_STANDARD_IA32_LINUX);
@@ -218,19 +229,20 @@ void ProcessRet(CONTEXT * ctxt){
     }
     num_rets++;
     syscall_encountered = false;
+    PIN_ReleaseLock(&pinLock);
   }
 }
 
 VOID Tracer(TRACE trace, VOID* v){
   for(BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl=BBL_Next(bbl)){
 
-      BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)ProcessRet, IARG_CONST_CONTEXT, IARG_END);
+      BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)ProcessRet, IARG_CONST_CONTEXT, IARG_THREAD_ID, IARG_END);
       num_instrumented++;
     
 
     for(INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins=INS_Next(ins)){
 	if(INS_IsSyscall(ins)){
-	  INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_CONST_CONTEXT, IARG_INST_PTR, IARG_END);
+	  INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_CONST_CONTEXT, IARG_INST_PTR, IARG_THREAD_ID, IARG_END);
 	  
 
           syscalls_found++;
@@ -240,6 +252,47 @@ VOID Tracer(TRACE trace, VOID* v){
  }
 }
 
+
+VOID ThreadFini(THREADID threadid, const CONTEXT *ctxt, INT32 code, VOID *v){
+  PIN_GetLock(&pinLock, PIN_GetTid());
+  //string identifier = get_identifier(threadid);
+  cout << "THREAD FINISHED, tid: "<< threadid <<"; pid: "<<getpid()<<"; count: "<<process_map[PIN_GetTid()] <<endl;
+
+  //cout << "****size of map: " << process_map.size() << endl;
+  //process_map.erase(identifier);
+  //flag_map.erase(identifier);
+
+  //check to see if the maps are empty. If so, close everything down
+  //if(process_map.empty() && flag_map.empty()){
+  //  cout << "TOTAL CALLS FOUND: " << syscall_total<<endl;
+  //  outFile.close();
+  //}
+  num_threads--;
+  if( num_threads == 0){
+    cout << "ALL THREADS DONE"<<endl;
+  }
+  PIN_ReleaseLock(&pinLock);
+}
+
+VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v){
+  PIN_GetLock(&pinLock, PIN_GetTid());
+  
+  string identifier = get_identifier(threadid);
+
+  //stringstream buff;
+  //cout << "THREAD STARTED, tid: " << threadid << "; pid: "<<getpid()<<endl;
+  //buff << threadid <<":" <<getpid();
+  //cout << "Identifier" << buff.str()<<endl;
+  cout << "THREAD STARTED WITH ID: " << identifier << endl;
+  //process_map[threadid] = 0;
+  //process_map[threadid] = false;
+  num_threads++;
+  process_map[PIN_GetTid()] = 0;
+
+  cout << "num_threads: " <<num_threads<<endl;
+  PIN_ReleaseLock(&pinLock);
+
+}
 
 VOID Fini(INT32 code, VOID* v){
 
@@ -263,7 +316,7 @@ INT32 Usage(VOID){
 
 
 int main(int argc, char** argv){
-
+  PIN_InitLock(&pinLock);
   /**Start with symbols to set up*/
   PIN_InitSymbols();
   if(PIN_Init(argc, argv)){
@@ -272,11 +325,14 @@ int main(int argc, char** argv){
 
   outFile.open(KnobOutputFile.Value().c_str());
   outFile.setf(ios::showbase);
+  
   TRACE_AddInstrumentFunction(Tracer,0);
+  PIN_AddThreadStartFunction(ThreadStart,0);
+  PIN_AddThreadFiniFunction(ThreadFini,0);
   //INS_AddInstrumentFunction(Instr, 0);
   /*PIN_AddSyscallEntryFunction(SyscallEntry,0);
     PIN_AddSyscallExitFunction(SyscallExit,0);*/
-  PIN_AddFiniFunction(Fini, 0);
+  //PIN_AddFiniFunction(Fini, 0);
 
   /**Shouldn't return*/
   PIN_StartProgram();
