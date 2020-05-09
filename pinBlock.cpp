@@ -103,7 +103,7 @@ int main(int argc, char** argv){
   outFile.setf(ios::showbase);
 
   TRACE_AddInstrumentFunction(Instr, 0);
-  PIN_AddFollowChildProcessFunction (FollowChild, 0);
+  //PIN_AddFollowChildProcessFunction (FollowChild, 0);
   PIN_AddFiniFunction(Fini,0);
 
   /**Let's go!*/
