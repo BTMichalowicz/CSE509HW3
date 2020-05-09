@@ -26,24 +26,24 @@ typedef enum{
 KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btraceApp.out", "specify trace file name");
 
 bool syscall_encountered = false;
-int num_threads = 0;
+
 int num_calls = 0;
 int num_rets = 0;
 int num_instrumented = 0;
 int syscalls_found = 0;
+<<<<<<< HEAD
+int syscall_total = 0;
+PIN_LOCK pin_lock;
+//map tid to syscall count
+map<int,int> process_map;
+map<int,bool> flag_map;
 
-map<int,bool> process_map;
-
-PIN_LOCK pinLock;
+=======
+>>>>>>> parent of 49fc208... not sure if child processes are working
 /** General plan: Set up for every syscall put in, ensure to print out each instruction with pintools, ala strace.
  * Use dynamic argument printing in EAX, EBX, ECX, EDX
  */
 
-string get_identifier(THREADID tid){
-  stringstream buff;
-  buff << PIN_GetTid()<<":" <<PIN_GetPid();
-  return buff.str();
-}
 string syscall_decode(int syscallNum){
   switch(syscallNum){
     case SYS_read: return "read";
@@ -132,12 +132,18 @@ string syscall_decode(int syscallNum){
   }
   
 }
-void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr,THREADID tid/*, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5*/){
+    void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr/*, INT32 num, ADDRINT arg0, ADDRINT arg1, ADDRINT arg2, ADDRINT arg3,ADDRINT arg4, ADDRINT arg5*/){
   //syscall_encountered=true;
   //outFile << "Syscall found!\n";
   //
   //
+<<<<<<< HEAD
+      PIN_GetLock(&pin_lock, tid+1);
+      //string identifier = get_identifier(tid);
+ 
+=======
   
+>>>>>>> parent of 49fc208... not sure if child processes are working
       INT32 num =  PIN_GetContextReg(ctxt, REG_EAX);
       ADDRINT arg0 = PIN_GetContextReg(ctxt, REG_EBX);
       ADDRINT arg1 = PIN_GetContextReg(ctxt, REG_ECX);
@@ -157,7 +163,7 @@ void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr,THREADID tid/*, INT32 num, AD
 	arg5 = mmapArgs[5];
       }
 #endif
-  PIN_GetLock(&pinLock,  PIN_GetTid());
+
   outFile << "\n0x" <<hex << inst_ptr;
   outFile << ": "<< syscall_decode(num);
   //TODO: use the syscall number to print the appropriate number of arguments
@@ -197,16 +203,23 @@ void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr,THREADID tid/*, INT32 num, AD
   outFile << ", arg5: " << hex << arg5 << " )" <<endl;
   //outFile << "; idk: "  <<idk<<endl;
   //outFile << arg0 << endl;
-  outFile << std::flush;
+
   //TODO
   //
+<<<<<<< HEAD
+  //num_calls++;
+    
+    process_map[tid] += 1;
+    flag_map[tid] = true;
+    //syscall_encountered = true;
+    PIN_ReleaseLock(&pin_lock);
+=======
   num_calls++;
-  //syscall_encountered = true;
-  process_map[PIN_GetTid()] = true;
-  PIN_ReleaseLock(&pinLock);
+  syscall_encountered = true;
+>>>>>>> parent of 49fc208... not sure if child processes are working
 }
 
-/*
+
 void SyscallAfter(ADDRINT ret, ADDRINT num){
   if (syscall_encountered){
     outFile << "Return value: " << ret << endl << num << endl<<endl;
@@ -216,12 +229,18 @@ void SyscallAfter(ADDRINT ret, ADDRINT num){
 
   }
 }
-*/
 
+<<<<<<< HEAD
 void ProcessRet(CONTEXT * ctxt, THREADID tid){
-  PIN_GetLock(&pinLock,  PIN_GetTid());
+  //PIN_GetLock(&pin_lock, tid+1);
+  //string identifier = get_identifier(tid);
+  if (flag_map[tid]){
+  //if (syscall_encountered){
+=======
+void ProcessRet(CONTEXT * ctxt){
+  if (syscall_encountered){
+>>>>>>> parent of 49fc208... not sure if child processes are working
 
-  if (process_map[PIN_GetTid()] == true){
     outFile << "EAX Content: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
     //outFile << "Return value: " << PIN_GetSyscallReturn(ctxt, SYSCALL_STANDARD_IA32_LINUX) << endl;
     int err = PIN_GetSyscallErrno(ctxt, SYSCALL_STANDARD_IA32_LINUX);
@@ -229,23 +248,27 @@ void ProcessRet(CONTEXT * ctxt, THREADID tid){
       outFile << "Error Number: " << dec << err << endl;
 
     }
-    outFile << std::flush;
     num_rets++;
-    process_map[PIN_GetTid()] = false;
+<<<<<<< HEAD
+    //syscall_encountered = false;
+    flag_map[tid] = false;
+    //PIN_ReleaseLock(&pin_lock);
+=======
+    syscall_encountered = false;
+>>>>>>> parent of 49fc208... not sure if child processes are working
   }
-  PIN_ReleaseLock(&pinLock);
 }
 
 VOID Tracer(TRACE trace, VOID* v){
   for(BBL bbl = TRACE_BblHead(trace); BBL_Valid(bbl); bbl=BBL_Next(bbl)){
 
-      BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)ProcessRet, IARG_CONST_CONTEXT, IARG_THREAD_ID, IARG_END);
+      BBL_InsertCall(bbl, IPOINT_BEFORE, (AFUNPTR)ProcessRet, IARG_CONST_CONTEXT, IARG_END);
       num_instrumented++;
     
 
     for(INS ins = BBL_InsHead(bbl); INS_Valid(ins); ins=INS_Next(ins)){
 	if(INS_IsSyscall(ins)){
-	  INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_CONST_CONTEXT, IARG_INST_PTR, IARG_THREAD_ID, IARG_END);
+	  INS_InsertCall(ins, IPOINT_BEFORE, AFUNPTR(SyscallBefore), IARG_CONST_CONTEXT, IARG_INST_PTR, IARG_END);
 	  
 
           syscalls_found++;
@@ -256,51 +279,6 @@ VOID Tracer(TRACE trace, VOID* v){
 }
 
 
-VOID ThreadFini(THREADID threadid, const CONTEXT *ctxt, INT32 code, VOID *v){
-  PIN_GetLock(&pinLock, PIN_GetTid());
-  //string identifier = get_identifier(threadid);
-  //cout << "THREAD FINISHED, tid: "<< threadid <<"; pid: "<<getpid()<<"; count: "<<process_map[PIN_GetTid()] <<endl;
-
-  //cout << "****size of map: " << process_map.size() << endl;
-  //process_map.erase(identifier);
-  //flag_map.erase(identifier);
-
-  //check to see if the maps are empty. If so, close everything down
-  //if(process_map.empty() && flag_map.empty()){
-  //  cout << "TOTAL CALLS FOUND: " << syscall_total<<endl;
-  //  outFile.close();
-  //}
-
-  num_threads--;
-  if( num_threads == 0){
-    //cout << "ALL THREADS DONE"<<endl;
-    outFile.close();
-  }
-  PIN_ReleaseLock(&pinLock);
-}
-
-VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v){
-  PIN_GetLock(&pinLock, PIN_GetTid());
-  
-  string identifier = get_identifier(threadid);
-
-  //stringstream buff;
-  //cout << "THREAD STARTED, tid: " << threadid << "; pid: "<<getpid()<<endl;
-  //buff << threadid <<":" <<getpid();
-  //cout << "Identifier" << buff.str()<<endl;
-  //cout << "THREAD STARTED WITH ID: " << identifier << endl;
-  //process_map[threadid] = 0;
-  //process_map[threadid] = false;
-
-  num_threads++;
-  //process_map[PIN_GetTid()] = false;
-
-  //cout << "num_threads: " <<num_threads<<endl;
-  PIN_ReleaseLock(&pinLock);
-
-}
-
-/*
 VOID Fini(INT32 code, VOID* v){
 
   outFile << "Success" << endl;
@@ -310,8 +288,45 @@ VOID Fini(INT32 code, VOID* v){
   outFile << "Blocks instrumented: " << num_instrumented<<endl;
   outFile << "Syscalls found: " << syscalls_found<<endl;
   outFile.close(); //Ben don't forget to close files!!!
+<<<<<<< HEAD
+
+  cout<<"PROCESS FINISHED: "<< process_map[getpid()] <<endl;
+  
+}*/
+
+VOID ThreadFini(THREADID threadid, const CONTEXT *ctxt, INT32 code, VOID *v){
+  //PIN_GetLock(&pin_lock, threadid+1);
+  //string identifier = get_identifier(threadid);
+  cout << "THREAD FINISHED, tid: "<< threadid <<"; pid: "<<getpid()<<"; count: "<<process_map[threadid] <<endl;
+  
+  cout << "****size of map: " << process_map.size() << endl;
+  //process_map.erase(identifier);
+  //flag_map.erase(identifier);
+
+  //check to see if the maps are empty. If so, close everything down
+  if(process_map.empty() && flag_map.empty()){
+    cout << "TOTAL CALLS FOUND: " << syscall_total<<endl;
+    outFile.close();
+  }
+  //PIN_ReleaseLock(&pin_lock);
 }
-*/
+
+VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v){
+  //PIN_GetLock(&pin_lock, threadid+1);
+  string identifier = get_identifier(threadid);
+
+  //stringstream buff;
+  //cout << "THREAD STARTED, tid: " << threadid << "; pid: "<<getpid()<<endl;
+  //buff << threadid <<":" <<getpid();
+  //cout << "Identifier" << buff.str()<<endl;
+  cout << "THREAD STARTED WITH ID: " << identifier << endl;
+  process_map[threadid] = 0;
+  process_map[threadid] = false;
+  //PIN_ReleaseLock(&pin_lock);
+=======
+>>>>>>> parent of 49fc208... not sure if child processes are working
+}
+
 
 INT32 Usage(VOID){
   cerr << "In conjunction with Pin, this tool performs system call interception without incurring too much overhead a la ptrace(2)" << endl;
@@ -323,23 +338,20 @@ INT32 Usage(VOID){
 
 
 int main(int argc, char** argv){
-  PIN_InitLock(&pinLock);
+
   /**Start with symbols to set up*/
   PIN_InitSymbols();
   if(PIN_Init(argc, argv)){
     return Usage(); //Create if failure occurs
   }
-
+  PIN_InitLock(&pin_lock);    
   outFile.open(KnobOutputFile.Value().c_str());
   outFile.setf(ios::showbase);
-  
   TRACE_AddInstrumentFunction(Tracer,0);
-  PIN_AddThreadStartFunction(ThreadStart,0);
-  PIN_AddThreadFiniFunction(ThreadFini,0);
   //INS_AddInstrumentFunction(Instr, 0);
   /*PIN_AddSyscallEntryFunction(SyscallEntry,0);
     PIN_AddSyscallExitFunction(SyscallExit,0);*/
-  //PIN_AddFiniFunction(Fini, 0);
+  PIN_AddFiniFunction(Fini, 0);
 
   /**Shouldn't return*/
   PIN_StartProgram();
