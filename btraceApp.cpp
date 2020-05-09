@@ -25,6 +25,7 @@ typedef enum{
 
 KNOB<string>KnobOutputFile(KNOB_MODE_WRITEONCE, "pintool", "o", "btraceApp.out", "specify trace file name");
 
+//Some debugging variables. Not used in the application
 bool syscall_encountered = false;
 int num_threads = 0;
 int num_calls = 0;
@@ -32,11 +33,14 @@ int num_rets = 0;
 int num_instrumented = 0;
 int syscalls_found = 0;
 
+//Keep track of which threads have encountered syscalls and what their output will be
 map<int,bool> process_map;
-
+map<int,string> output_map;
 PIN_LOCK pinLock;
-/** General plan: Set up for every syscall put in, ensure to print out each instruction with pintools, ala strace.
- * Use dynamic argument printing in EAX, EBX, ECX, EDX
+
+
+/** General plan: Store the arguments like syscall number as a string until the syscall returns. This will avoid mangled lines in the output
+ * 
  */
 
 string get_identifier(THREADID tid){
@@ -44,6 +48,7 @@ string get_identifier(THREADID tid){
   buff << PIN_GetTid()<<":" <<PIN_GetPid();
   return buff.str();
 }
+
 string syscall_decode(int syscallNum){
   switch(syscallNum){
     case SYS_read: return "read";
@@ -162,9 +167,11 @@ void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr,THREADID tid/*, INT32 num, AD
       }
 #endif
   PIN_GetLock(&pinLock,  PIN_GetTid());
-  outFile << "\n0x" <<hex << inst_ptr;
-  outFile << ": "<< syscall_decode(num);
-  //TODO: use the syscall number to print the appropriate number of arguments
+  stringstream buff;
+  //buff << "\n0x" <<hex << inst_ptr;
+  //buff << ": "<< syscall_decode(num);
+  buff << syscall_decode(num);
+  //use the syscall number to print the appropriate number of arguments
   switch(num){
     case SYS_open:
     case SYS_stat:
@@ -176,11 +183,11 @@ void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr,THREADID tid/*, INT32 num, AD
     case SYS_rename:
     case SYS_chroot:
     case SYS_unlink:
-      outFile << "( arg0: \"" << (char*)(*(&arg0)) << "\"";
+      buff << "( arg0: \"" << (char*)(*(&arg0)) << "\"";
       break;
     default:
 
-      outFile << "( arg0: " << hex << arg0;
+      buff << "( arg0: " << hex << arg0;
       break;
   }
 
@@ -189,24 +196,24 @@ void SyscallBefore(CONTEXT *ctxt, ADDRINT inst_ptr,THREADID tid/*, INT32 num, AD
     case SYS_rename:
     case SYS_renameat:
     case SYS_unlinkat:
-      outFile<< ", arg1: " << (char*)(*(&arg1)) << "\n";
+      buff<< ", arg1: " << (char*)(*(&arg1)) << "\n";
       break;
     default:
-      outFile << ", arg1: " << hex << arg1;
+      buff << ", arg1: " << hex << arg1;
       break;
   }
-  outFile << ", arg2: " << hex << arg2;
-  outFile << ", arg3: " << hex << arg3;
-  outFile << ", arg4: " << hex << arg4;
-  outFile << ", arg5: " << hex << arg5 << " )" <<endl;
+  buff << ", arg2: " << hex << arg2;
+  buff << ", arg3: " << hex << arg3;
+  buff << ", arg4: " << hex << arg4;
+  buff << ", arg5: " << hex << arg5 << " )" <<endl;
   //outFile << "; idk: "  <<idk<<endl;
   //outFile << arg0 << endl;
-  outFile << std::flush;
-  //TODO
-  //
+  //buff << std::flush;
+  
   num_calls++;
   //syscall_encountered = true;
   process_map[PIN_GetTid()] = true;
+  output_map[PIN_GetTid()] = buff.str();
   PIN_ReleaseLock(&pinLock);
 }
 
@@ -226,14 +233,16 @@ void ProcessRet(CONTEXT * ctxt, THREADID tid){
   PIN_GetLock(&pinLock,  PIN_GetTid());
 
   if (process_map[PIN_GetTid()] == true){
-    outFile << "EAX Content: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
+    outFile << output_map[PIN_GetTid()];
+    
+    outFile << "Return Value: " << PIN_GetContextReg(ctxt, REG_EAX) << endl;
     //outFile << "Return value: " << PIN_GetSyscallReturn(ctxt, SYSCALL_STANDARD_IA32_LINUX) << endl;
     int err = PIN_GetSyscallErrno(ctxt, SYSCALL_STANDARD_IA32_LINUX);
     if(err!=0){
       outFile << "Error Number: " << dec << err << endl;
 
     }
-    outFile << std::flush;
+    outFile << endl<<std::flush;
     num_rets++;
     process_map[PIN_GetTid()] = false;
   }
@@ -259,7 +268,7 @@ VOID Tracer(TRACE trace, VOID* v){
  }
 }
 
-
+//Callback for whenever a thread starts
 VOID ThreadFini(THREADID threadid, const CONTEXT *ctxt, INT32 code, VOID *v){
   PIN_GetLock(&pinLock, PIN_GetTid());
   //string identifier = get_identifier(threadid);
@@ -283,10 +292,11 @@ VOID ThreadFini(THREADID threadid, const CONTEXT *ctxt, INT32 code, VOID *v){
   PIN_ReleaseLock(&pinLock);
 }
 
+//Callback for whenever a thread finishes
 VOID ThreadStart(THREADID threadid, CONTEXT *ctxt, INT32 flags, VOID *v){
   PIN_GetLock(&pinLock, PIN_GetTid());
   
-  string identifier = get_identifier(threadid);
+  //string identifier = get_identifier(threadid);
 
   //stringstream buff;
   //cout << "THREAD STARTED, tid: " << threadid << "; pid: "<<getpid()<<endl;
