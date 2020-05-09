@@ -99,6 +99,10 @@ string syscall_decode(int syscallNum){
     case 373: return "shutdown";
     case 140: return "llseek";
     case SYS_pipe2: return "pipe2";
+    case SYS_futex: return "futex";
+    case SYS_waitpid: return "waitpid";
+    case SYS_poll: return "poll";
+    case 277: return "mq_open";
     case SYS_pipe: return "pipe";
     case SYS_chdir: return "chdir";
     case SYS_fchdir: return "fchdir";
